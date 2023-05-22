@@ -1,47 +1,61 @@
 package ru.netology.test;
 
+import lombok.val;
 import org.junit.jupiter.api.Test;
 import ru.netology.data.DataHelper;
-import ru.netology.page.DashboardPage;
 import ru.netology.page.LoginPage;
 
 import static com.codeborne.selenide.Selenide.open;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static ru.netology.data.DataHelper.*;
+import static ru.netology.data.DataHelper.generateValidAmount;
 
 public class MoneyTransferTest {
-  LoginPage loginPage;
-  DashboardPage dashboardPage;
-
   @Test
-  void openTransferWindow() {
-    loginPage = open("http://localhost:9999/", LoginPage.class);
+  void shouldTransferMoneyBetweenOwnCardsV1() {
+    open("http://localhost:9999");
+    var loginPage = new LoginPage();
     var authInfo = DataHelper.getAuthInfo();
-    var verificationPage = LoginPage.validLogin(authInfo);
+    var verificationPage = loginPage.validLogin(authInfo);
     var verificationCode = DataHelper.getVerificationCodeFor(authInfo);
-    dashboardPage = verificationPage.validVerify((verificationCode));
+    var dashboardPage = verificationPage.validVerify(verificationCode);
+    var infoCardFirst = DataHelper.getFirstInfoCard();
+    var infoCardSecond = DataHelper.getSecondInfoCard();
+    var firstDashboardPage = dashboardPage.getDashboardPage(infoCardFirst);
+    var secondDashboardPage = dashboardPage.getDashboardPage(infoCardSecond);
+    var amount = generateValidAmount(firstDashboardPage);
+    var expectedFirstDashboardPage = firstDashboardPage + amount;
+    var expectedSecondDashboardPage = secondDashboardPage - amount;
+    var transactionPage = dashboardPage.selectCardToTransfer(infoCardFirst);
+    transactionPage.validTransfer(String.valueOf(amount), infoCardSecond);
+
+    assertEquals(expectedFirstDashboardPage, dashboardPage.getDashboardPage(infoCardFirst));
+    assertEquals(expectedSecondDashboardPage, dashboardPage.getDashboardPage(infoCardSecond));
+
   }
 
   @Test
-  void transferAmountFirstCardToSecondCard() {
-    loginPage = open("http://localhost:9999/", LoginPage.class);
+  void shouldTransferMoneyBetweenOwnCardsV2() {
+
+    open("http://localhost:9999");
+    var loginPage = new LoginPage();
     var authInfo = DataHelper.getAuthInfo();
-    var verificationPage = LoginPage.validLogin(authInfo);
+    var verificationPage = loginPage.validLogin(authInfo);
     var verificationCode = DataHelper.getVerificationCodeFor(authInfo);
-    dashboardPage = verificationPage.validVerify((verificationCode));
-    var firstCardInfo = getFirstCardInfo();
-    var secondCardInfo = getSecondCardInfo();
-    var firstCardBalance = dashboardPage.getCardBalance(firstCardInfo);
-    var secondCardBalance = dashboardPage.getCardBalance(secondCardInfo);
-    var amount = generateValidAmount(firstCardBalance);
-    var expectedBalanceFirstCard = firstCardBalance - amount;
-    var expectedBalanceSecondCard = secondCardBalance + amount;
-    var transferPage = dashboardPage.selectCardtoTransfer(secondCardInfo);
-    dashboardPage = transferPage.makeValidTransfer(String.valueOf(amount), firstCardInfo);
-    var actualBalanceFirstCard = dashboardPage.getCardBalance(firstCardInfo);
-    var actualBalanceSecondCard = dashboardPage.getCardBalance(secondCardInfo);
-    assertEquals(expectedBalanceFirstCard,actualBalanceFirstCard);
-    assertEquals(expectedBalanceSecondCard, actualBalanceSecondCard);
+    val dashboardPage = verificationPage.validVerify(verificationCode);
+    var infoCardSecond = DataHelper.getSecondInfoCard();
+    var infoCardFirst = DataHelper.getFirstInfoCard();
+    val secondDashboardPage = dashboardPage.getDashboardPage(infoCardSecond);
+    val firstDashboardPage = dashboardPage.getDashboardPage(infoCardFirst);
+    val amount = generateValidAmount(firstDashboardPage);
+    val expectedFirstDashboardPage = firstDashboardPage - amount;
+    val expectedSecondDashboardPage = secondDashboardPage + amount;
+    val transactionPage = dashboardPage.selectCardToTransfer(infoCardSecond);
+    transactionPage.validTransfer(String.valueOf(amount), infoCardFirst);
+
+    assertEquals(expectedSecondDashboardPage, dashboardPage.getDashboardPage(infoCardSecond));
+    assertEquals(expectedFirstDashboardPage, dashboardPage.getDashboardPage(infoCardFirst));
 
   }
+
+
 }
